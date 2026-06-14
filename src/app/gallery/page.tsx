@@ -3,7 +3,6 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, ZoomIn } from "lucide-react";
-import type { Metadata } from "next";
 
 const galleryItems = [
   { id: 1, src: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80", alt: "Steel Factory", category: "Factory" },

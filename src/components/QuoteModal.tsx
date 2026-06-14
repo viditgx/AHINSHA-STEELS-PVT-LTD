@@ -43,7 +43,7 @@ export default function QuoteModal({ isOpen, onClose }: Props) {
               <span className="text-3xl">✅</span>
             </div>
             <p className="text-green-600 font-semibold text-lg">Quote Request Sent!</p>
-            <p className="text-steel text-sm mt-1">We'll get back to you within 24 hours.</p>
+            <p className="text-steel text-sm mt-1">We&apos;ll get back to you within 24 hours.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

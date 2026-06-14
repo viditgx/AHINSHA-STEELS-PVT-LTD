@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Target, Eye, Heart, ArrowRight } from "lucide-react";
+import { CheckCircle2, Target, Eye, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us",
