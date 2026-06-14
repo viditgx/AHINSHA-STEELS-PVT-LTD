@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Phone, Mail, Clock, Send, MessageCircle, CheckCircle2 } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, MessageCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 const contactInfo = [
   {
@@ -18,7 +18,7 @@ const contactInfo = [
   {
     icon: Mail,
     title: "Email Address",
-    lines: ["info@ahinsha-steels.com", "sales@ahinsha-steels.com"],
+    lines: ["info@ahinsha-steels.com"],
     href: "mailto:info@ahinsha-steels.com",
   },
   {
@@ -30,10 +30,38 @@ const contactInfo = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+
+    const form = e.currentTarget;
+    const data = {
+      name: (form.querySelector('[name="name"]') as HTMLInputElement).value,
+      phone: (form.querySelector('[name="phone"]') as HTMLInputElement).value,
+      email: (form.querySelector('[name="email"]') as HTMLInputElement).value,
+      subject: (form.querySelector('[name="subject"]') as HTMLSelectElement).value,
+      message: (form.querySelector('[name="message"]') as HTMLTextAreaElement).value,
+      type: "contact",
+    };
+
+    try {
+      const res = await fetch("/api/inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please try again or WhatsApp us.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -95,35 +123,32 @@ export default function ContactPage() {
             {submitted ? (
               <div className="card p-10 text-center">
                 <CheckCircle2 size={64} className="text-green-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold font-heading text-primary dark:text-white mb-2">
-                  Message Sent!
-                </h3>
+                <h3 className="text-2xl font-bold font-heading text-primary dark:text-white mb-2">Message Sent!</h3>
                 <p className="text-steel dark:text-slate-400 mb-6">
                   Thank you for reaching out. Our team will get back to you within 24 hours.
                 </p>
-                <button onClick={() => setSubmitted(false)} className="btn-primary">
-                  Send Another Message
-                </button>
+                <button onClick={() => setSubmitted(false)} className="btn-primary">Send Another Message</button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>}
                 <div className="grid grid-cols-2 gap-5">
                   <div>
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1.5">Name *</label>
-                    <input required type="text" placeholder="Your full name" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+                    <input required name="name" type="text" placeholder="Your full name" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1.5">Phone *</label>
-                    <input required type="tel" placeholder="+91 XXXXX XXXXX" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+                    <input required name="phone" type="tel" placeholder="+91 XXXXX XXXXX" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1.5">Email</label>
-                  <input type="email" placeholder="your@email.com" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+                  <input name="email" type="email" placeholder="your@email.com" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1.5">Subject</label>
-                  <select className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white">
+                  <select name="subject" className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white">
                     <option>Product Inquiry</option>
                     <option>Get a Quote</option>
                     <option>Bulk Order</option>
@@ -133,18 +158,15 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1.5">Message *</label>
-                  <textarea required rows={5} placeholder="Describe your requirements in detail..." className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none bg-white dark:bg-slate-700 dark:text-white" />
+                  <textarea required name="message" rows={5} placeholder="Describe your requirements in detail..." className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none bg-white dark:bg-slate-700 dark:text-white" />
                 </div>
                 <div className="flex gap-4">
-                  <button type="submit" className="btn-primary flex items-center gap-2">
-                    <Send size={16} /> Send Inquiry
+                  <button disabled={loading} type="submit" className="btn-primary flex items-center gap-2 disabled:opacity-70">
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                    {loading ? "Sending..." : "Send Message"}
                   </button>
-                  <a
-                    href="https://wa.me/917678284818"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
-                  >
+                  <a href="https://wa.me/917678284818" target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
                     <MessageCircle size={16} /> WhatsApp Us
                   </a>
                 </div>
@@ -154,26 +176,20 @@ export default function ContactPage() {
 
           {/* Map */}
           <div>
-            <div className="inline-block bg-accent/10 text-accent px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
-              Find Us
-            </div>
+            <div className="inline-block bg-accent/10 text-accent px-4 py-1.5 rounded-full text-sm font-semibold mb-4">Find Us</div>
             <h2 className="section-title mb-8">Our Location</h2>
             <div className="rounded-2xl overflow-hidden shadow-lg h-[400px]">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d56814.7!2d78.6456!3d27.8087!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3974827e0c3f9b35%3A0x6ac09d4f97bb5c07!2sKasganj%2C%20Uttar%20Pradesh!5e0!3m2!1sen!2sin!4v1640000000000!5m2!1sen!2sin"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Ahinsha Steels Location"
+                width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade" title="Ahinsha Steels Location"
               />
             </div>
             <div className="mt-6 p-5 bg-slate-50 dark:bg-slate-800 rounded-xl">
               <h4 className="font-semibold text-primary dark:text-white mb-2">Ahinsha Steels Pvt. Ltd.</h4>
               <p className="text-sm text-steel dark:text-slate-400">Kasganj, Uttar Pradesh, India – 207123</p>
-              <a href="https://maps.google.com/?q=Kasganj,UP,India" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-accent text-sm font-semibold mt-2 hover:underline">
+              <a href="https://maps.google.com/?q=Kasganj,UP,India" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-accent text-sm font-semibold mt-2 hover:underline">
                 Get Directions →
               </a>
             </div>

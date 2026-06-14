@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Send, X, ChevronRight } from "lucide-react";
+import { CheckCircle2, Send, X, ChevronRight, Loader2 } from "lucide-react";
 import { products } from "@/lib/data";
 
 const categories = ["All", "Structural", "Flat Products", "Custom"];
@@ -13,10 +13,37 @@ interface InquiryProduct {
 
 function InquiryModal({ product, onClose }: { product: InquiryProduct; onClose: () => void }) {
   const [submitted, setSubmitted] = useState(false);
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => { onClose(); }, 2000);
+    setLoading(true);
+    setError("");
+    const form = e.currentTarget;
+    const data = {
+      name: (form.querySelector('[name="name"]') as HTMLInputElement).value,
+      phone: (form.querySelector('[name="phone"]') as HTMLInputElement).value,
+      email: (form.querySelector('[name="email"]') as HTMLInputElement).value,
+      message: (form.querySelector('[name="message"]') as HTMLTextAreaElement).value,
+      product: product.name,
+      type: "product",
+    };
+    try {
+      const res = await fetch("/api/inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      setSubmitted(true);
+      setTimeout(() => { onClose(); }, 2000);
+    } catch {
+      setError("Failed to send. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,12 +63,14 @@ function InquiryModal({ product, onClose }: { product: InquiryProduct; onClose: 
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input required type="text" placeholder="Your Name *" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
-            <input required type="tel" placeholder="Phone Number *" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
-            <input type="email" placeholder="Email Address" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
-            <textarea rows={3} placeholder="Quantity & requirements..." className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none bg-white dark:bg-slate-700 dark:text-white" />
-            <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2">
-              <Send size={16} /> Send Inquiry
+            {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-2 rounded-lg">{error}</div>}
+            <input required name="name" type="text" placeholder="Your Name *" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+            <input required name="phone" type="tel" placeholder="Phone Number *" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+            <input name="email" type="email" placeholder="Email Address" className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white dark:bg-slate-700 dark:text-white" />
+            <textarea name="message" rows={3} placeholder="Quantity & requirements..." className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none bg-white dark:bg-slate-700 dark:text-white" />
+            <button disabled={loading} type="submit" className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {loading ? "Sending..." : "Send Inquiry"}
             </button>
           </form>
         )}
